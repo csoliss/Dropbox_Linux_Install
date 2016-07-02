@@ -5,7 +5,8 @@ import subprocess
 import os
 import socket
 import apt
-import time
+
+__version__ = '1.0.0'
 
 ValidOSVersion = ({'ubuntu': ['hardy', 'intrepid', 'jaunty', 'karmic', 'lucid',
                  'maverick', 'natty', 'oneiric', 'precise', 'quantal', 'raring',
@@ -43,21 +44,6 @@ def is_connected():
         print('System has not internet connection.')
         print('Connect the system to internet...\n')
         return False
-
-
-def get_version():
-    'Read distro/codename from the lsb-release file.'
-    _id, codename = None, None
-    try:
-        with open('/etc/lsb-release') as f:
-            for line in f:
-                if line.startswith('DISTRIB_CODENAME'):
-                    _, _, codename = line.rstrip().partition('=')
-                elif line.startswith('DISTRIB_ID'):
-                    _, _, _id = line.rstrip().partition('=')
-    except IOError as err:
-        print(err.__class__.__name__, err)
-    return _id, codename
 
 
 def validingOSVersion(_ValidOsVersion, _MyOS, _OSVersion):
@@ -121,12 +107,16 @@ class Linux_Cmd():
     def install_cmd(self, _package):
         if not self.check_pgk(_package):
             if self._MyOS == 'ubuntu' or self._MyOS == 'debian':
-                print(('Installing "%s"'.format(_package)))
-                pkg = self.cache[_package]
-                pkg.mark_install()
-                self.cache.commit(apt.progress.base.AcquireProgress(),
-                            apt.progress.base.InstallProgress())
-                print('OK...\n')
+                print(('Installing "{}"'.format(_package)))
+                try:
+                    self.command('apt install -y {}'.format(_package))
+                except:
+                    try:
+                        self.command('aptitude install -y {}'.format(_package))
+                    except:
+                        self.command('apt-get install -y {}'.format(_package))
+                finally:
+                    print('OK...\n')
 
     def multi_install_cmd(self, _packages):
         if type(_packages) is list or type(_packages) is tuple:
@@ -175,17 +165,12 @@ def install_app(MyOS, OSName):
 
 
 if __name__ == '__main__':
+    print(('Running Dropbox Installer\n    Version: {}'.format(__version__)))
     try:
         try:
-            try:
-                _os = get_version()
-                MyOS = _os[0].lower()
-                OSName = _os[1].lower()
-            except:
-                if sys.argv[1] and sys.argv[2]:
-                    MyOS = sys.argv[1].lower()
-                    OSName = sys.argv[2].lower()
-            finally:
+            if sys.argv[1] and sys.argv[2]:
+                MyOS = sys.argv[1].lower()
+                OSName = sys.argv[2].lower()
                 if check_root(MyOS, OSName):
                     if is_connected():
                         if validingOSVersion(ValidOSVersion, MyOS, OSName):
